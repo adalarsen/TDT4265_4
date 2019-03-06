@@ -18,9 +18,21 @@ def calculate_iou(prediction_box, gt_box):
             float: value of the intersection of union for the two boxes.
     """
     # YOUR CODE HERE
-    overlap = np.logical_and(prediction_box, gt_box).sum()
-    union = prediction_box.sum() + gt_box.sum() - overlap
-    iou = overlap / float(union)
+    x1 = np.maximum(prediction_box[0], gt_box[0])
+    y1 = np.maximum(prediction_box[1], gt_box[1])
+    x2 = np.minimum(prediction_box[2], gt_box[2])
+    y2 = np.minimum(prediction_box[3], gt_box[3])
+    
+    if(x2 < x1 or y2 < y1):
+        return 0
+
+    
+    overlap = (x2 - x1)*(y2 - y1)
+    area_1 = (prediction_box[2] - prediction_box[0])*(prediction_box[3] - prediction_box[1])
+    area_2 = (gt_box[2] - gt_box[0])*(gt_box[3] - gt_box[1])
+    
+    iou = overlap / (area_1 + area_2 - overlap)
+    
     return iou
 
 def calculate_precision(num_tp, num_fp, num_fn):
