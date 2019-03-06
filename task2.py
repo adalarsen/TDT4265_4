@@ -67,6 +67,8 @@ def calculate_recall(num_tp, num_fp, num_fn):
 
 
 def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
+    #print(prediction_boxes)
+    #print(gt_boxes)
     """Finds all possible matches for the predicted boxes to the ground truth boxes.
         No bounding box can have more than one match.
 
@@ -86,13 +88,36 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
             objects with shape: [number of box matches, 4].
             Each row includes [xmin, ymin, xmax, ymax]
     """
+    
+    index = 0
+    highest_box = np.zeros([len(gt_boxes),4])
+    for i in gt_boxes:
+        highest = 0
+        for j in prediction_boxes:
+            score = calculate_iou(i, j)
+            if score >= iou_threshold:
+                if score > highest:
+                    highest = score
+                    highest_box[index] = j
+        index = index + 1
+   
+    index = 0
+    for i in highest_box:
+        print("loop", i)
+        if i.sum()==0:
+            highest_box = np.delete(highest_box, index, 0)
+            gt_boxes = np.delete(gt_boxes, index, 0)
+        index = index+1
+
+
+
     # Find all possible matches with a IoU >= iou threshold
     #for i in np.nditer(prediction_boxes):
-        
+       
     # Sort all matches on IoU in descending order
 
     # Find all matches with the highest IoU threshold
-    return 0
+    return highest_box, gt_boxes
 
 
 def calculate_individual_image_result(
@@ -215,6 +240,7 @@ def calculate_mean_average_precision(precisions, recalls):
     # evaluation
     recall_levels = np.linspace(0, 1.0, 11)
     # YOUR CODE HERE
+    print(precisions.shape)
     return 0
 
 
@@ -261,4 +287,8 @@ def mean_average_precision(ground_truth_boxes, predicted_boxes):
 if __name__ == "__main__":
     ground_truth_boxes = read_ground_truth_boxes()
     predicted_boxes = read_predicted_boxes()
+    keys_gt = list(ground_truth_boxes.keys())
+    keys_pred = list(predicted_boxes.keys())
     mean_average_precision(ground_truth_boxes, predicted_boxes)
+    #iou_threshold = 0.001
+    #match, gt = get_all_box_matches(predicted_boxes[keys_pred[0]]['boxes'], ground_truth_boxes[keys_gt[0]], iou_threshold)
