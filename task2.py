@@ -103,10 +103,12 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
    
     index = 0
     for i in highest_box:
-        print("loop", i)
+        print(i)
+       
         if i.sum()==0:
             highest_box = np.delete(highest_box, index, 0)
             gt_boxes = np.delete(gt_boxes, index, 0)
+            index=index-1            
         index = index+1
 
 
@@ -117,6 +119,7 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
     # Sort all matches on IoU in descending order
 
     # Find all matches with the highest IoU threshold
+    
     return highest_box, gt_boxes
 
 
@@ -138,7 +141,22 @@ def calculate_individual_image_result(
         dict: containing true positives, false positives, true negatives, false negatives
             {"true_pos": int, "false_pos": int, "false_neg": int}
     """
-    return 0
+    box_matches = get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold)
+            
+    i = 0
+    for c in gt_boxes:
+        i += 1
+    
+    true_pos = int(np.size(box_matches, 0))
+    false_neg = i - np.size(box_matches, 0) 
+    
+    false_pos = np.shape(prediction_boxes)[0] - int(np.size(box_matches, 0))
+    final_dict = {'true_pos':0,'false_pos':0,'false_neg':0}
+    final_dict.update({'true_pos' : true_pos})
+    final_dict.update({'false_pos' : false_pos})
+    final_dict.update({'false_neg' : false_neg})
+    print(final_dict)
+    return final_dict
     # Find the bounding box matches with the highes IoU threshold
 
     # Compute true positives, false positives, false negatives
