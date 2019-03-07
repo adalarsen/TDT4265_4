@@ -22,8 +22,10 @@ def calculate_iou(prediction_box, gt_box):
     y1 = np.maximum(prediction_box[1], gt_box[1])
     x2 = np.minimum(prediction_box[2], gt_box[2])
     y2 = np.minimum(prediction_box[3], gt_box[3])
-    
-    if(x2 < x1 or y2 < y1):
+    # REturn 0 if x2 < x1 and y2 < y1
+    #print(type(x1))
+    #print(x1)
+    if((x2 < x1) or (y2 < y1)):
         return 0
 
     
@@ -88,29 +90,29 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
             objects with shape: [number of box matches, 4].
             Each row includes [xmin, ymin, xmax, ymax]
     """
+    num_pred_match = np.empty([0, 3])
+    for i in range(0, len(prediction_boxes)):
+        for x in range(0, len(gt_boxes)):
+            iou = calculate_iou(prediction_boxes[i], gt_boxes[x])
+            if(iou >= iou_threshold):
+                num_pred_match = np.append(num_pred_match, [[iou, i, x]], axis=0)
+                
+    num_pred_match = num_pred_match[num_pred_match[:,0].argsort()[::-1]]
     
-    index = 0
-    highest_box = np.zeros([len(gt_boxes),4])
-    for i in gt_boxes:
-        highest = 0
-        for j in prediction_boxes:
-            score = calculate_iou(i, j)
-            if score >= iou_threshold:
-                if score > highest:
-                    highest = score
-                    highest_box[index] = j
-        index = index + 1
-   
-    index = 0
-    for i in highest_box:
-        print(i)
-       
-        if i.sum()==0:
-            highest_box = np.delete(highest_box, index, 0)
-            gt_boxes = np.delete(gt_boxes, index, 0)
-            index=index-1            
-        index = index+1
-
+    new_pred_match = np.empty([0,4])
+    new_gt = np.empty([0,4])
+    gt_index = np.empty([0])
+    pred_index = np.empty([0])
+    
+    for j in range(0,len(num_pred_match)):
+        if(not np.isin(num_pred_match[j][1], pred_index) and not np.isin(num_pred_match[j][2], gt_index)):
+            gt_index = np.append(gt_index, num_pred_match[j][2])
+            pred_index = np.append(pred_index, num_pred_match[j][1])
+            new_pred_match = np.append(new_pred_match, [prediction_boxes[int(num_pred_match[j][1])]], axis=0)
+            new_gt = np.append(new_gt, [gt_boxes[int(num_pred_match[j][2])]], axis=0)
+            
+    return new_pred_match, new_gt
+    
 
 
     # Find all possible matches with a IoU >= iou threshold
@@ -141,21 +143,10 @@ def calculate_individual_image_result(
         dict: containing true positives, false positives, true negatives, false negatives
             {"true_pos": int, "false_pos": int, "false_neg": int}
     """
-    box_matches = get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold)
+    box_matches, new_gt = get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold)
             
-    i = 0
-    for c in gt_boxes:
-        i += 1
-    
-    true_pos = int(np.size(box_matches, 0))
-    false_neg = i - np.size(box_matches, 0) 
-    
-    false_pos = np.shape(prediction_boxes)[0] - int(np.size(box_matches, 0))
-    final_dict = {'true_pos':0,'false_pos':0,'false_neg':0}
-    final_dict.update({'true_pos' : true_pos})
-    final_dict.update({'false_pos' : false_pos})
-    final_dict.update({'false_neg' : false_neg})
-    print(final_dict)
+
+    final_dict = {'true_pos':len(box_matches),'false_pos':len(prediction_boxes)-len(box_matches),'false_neg':len(gt_boxes)-len(new_gt)}
     return final_dict
     # Find the bounding box matches with the highes IoU threshold
 
@@ -181,12 +172,30 @@ def calculate_precision_recall_all_images(
     Returns:
         tuple: (precision, recall). Both float.
     """
-    return 0
+    tp = 0
+    fp = 0
+    fn = 0
+    i = 0
+    for c in all_gt_boxes:
+        dict_true_vs_false = calculate_individual_image_result(all_prediction_boxes[i], all_gt_boxes[i], iou_threshold)
+        #print(dict_true_vs_false)
+        i += 1
+        tp += dict_true_vs_false['true_pos']
+        fp += dict_true_vs_false['false_pos']
+        fn += dict_true_vs_false['false_neg']
+    
+    
+    #print(tp,fp,fn)
+    precision = calculate_precision(tp, fp, fn)
+    recall = calculate_recall(tp, fp, fn)
+    
+    
+    return (precision, recall)
     # Find total true positives, false positives and false negatives
     # over all images
 
     # Compute precision, recall
-
+    
 
 def get_precision_recall_curve(all_prediction_boxes, all_gt_boxes,
                                confidence_scores, iou_threshold):
@@ -219,7 +228,9 @@ def get_precision_recall_curve(all_prediction_boxes, all_gt_boxes,
     # evaluation
     confidence_thresholds = np.linspace(0, 1, 500)
     # YOUR CODE HERE
-    return 0
+    
+    
+    return (1.4,3.3)
 
 
 def plot_precision_recall_curve(precisions, recalls):
