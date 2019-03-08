@@ -287,8 +287,17 @@ def calculate_mean_average_precision(precisions, recalls):
     # evaluation
     recall_levels = np.linspace(0, 1.0, 11)
     # YOUR CODE HERE
-    print(precisions.shape)
-    return 0
+    max_prc_array = []
+    
+    for r in recall_levels:
+        max_prc = 0
+        for prc, r_marked in zip(precisions, recalls):
+            if(r_marked >= r and prc >= max_prc):
+                max_prc = prc
+        max_prc_array.append(max_prc)
+        
+    mAP = 1.0 / len(recall_levels)*np.sum(max_prc_array)
+    return mAP
 
 
 def mean_average_precision(ground_truth_boxes, predicted_boxes):
