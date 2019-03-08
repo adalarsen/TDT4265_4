@@ -90,6 +90,7 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
             objects with shape: [number of box matches, 4].
             Each row includes [xmin, ymin, xmax, ymax]
     """
+    #print(prediction_boxes)
     num_pred_match = np.empty([0, 3])
     for i in range(0, len(prediction_boxes)):
         for x in range(0, len(gt_boxes)):
@@ -111,8 +112,7 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
             new_pred_match = np.append(new_pred_match, [prediction_boxes[int(num_pred_match[j][1])]], axis=0)
             new_gt = np.append(new_gt, [gt_boxes[int(num_pred_match[j][2])]], axis=0)
             
-    return new_pred_match, new_gt
-    
+    return new_pred_match, new_gt   
 
 
     # Find all possible matches with a IoU >= iou threshold
@@ -121,8 +121,6 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
     # Sort all matches on IoU in descending order
 
     # Find all matches with the highest IoU threshold
-    
-    return highest_box, gt_boxes
 
 
 def calculate_individual_image_result(
@@ -220,7 +218,7 @@ def get_precision_recall_curve(all_prediction_boxes, all_gt_boxes,
 
             E.g: score[0][1] is the confidence score for a predicted bounding box 1 in image 0.
     Returns:
-        tuple: (precision, recall). Both float.
+        tuple: (precision, recall). Both np array of floats floats.
     """
     # Instead of going over every possible confidence score threshold to compute the PR
     # curve, we will use an approximation
@@ -228,9 +226,29 @@ def get_precision_recall_curve(all_prediction_boxes, all_gt_boxes,
     # evaluation
     confidence_thresholds = np.linspace(0, 1, 500)
     # YOUR CODE HERE
+    # Iterate over all confidence thesholds, and filter out predicted bounding boxes with lower score
+      
     
+    precision = []
+    recall = []
     
-    return (1.4,3.3)
+    for c_t in confidence_thresholds:
+        img_pred_array = []
+        for img_num, pred_boxes in enumerate(all_prediction_boxes):
+            pred_array = []
+            for box_num, pred_box in enumerate(pred_boxes):
+                if(confidence_scores[img_num][box_num] >= c_t):
+                    pred_array.append(pred_box)
+            pred_array = np.array(pred_array)
+            img_pred_array.append(pred_array)
+        img_pred_array = np.array(img_pred_array)
+        
+        prc, rcl = calculate_precision_recall_all_images(img_pred_array, all_gt_boxes, iou_threshold)
+        precision.append(prc)
+        recall.append(rcl)
+        
+    return (np.array(precision), np.array(recall))
+                    
 
 
 def plot_precision_recall_curve(precisions, recalls):
